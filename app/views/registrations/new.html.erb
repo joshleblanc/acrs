@@ -1,0 +1,80 @@
+<section class="hero is-fullheight">
+  <div class="hero-body">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-5-tablet is-4-desktop">
+          <div class="box">
+            <h1 class="title has-text-centered">Create Account</h1>
+            <p class="has-text-centered mb-5">Join us today</p>
+
+            <% if @user.errors.any? %>
+              <div class="notification is-danger is-light">
+                <button class="delete" onclick="this.parentElement.remove()"></button>
+                <ul class="mb-0">
+                  <% @user.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+
+            <%= form_with model: @user, url: registration_path do |form| %>
+              <div class="field">
+                <%= form.label :username, class: "label" %>
+                <div class="control has-icons-left">
+                  <%= form.text_field :username, required: true, autofocus: true, autocomplete: "username", placeholder: "Choose a username", class: "input" %>
+                  <span class="icon is-small is-left">
+                    <i class="fas fa-user"></i>
+                  </span>
+                </div>
+              </div>
+
+              <div class="field">
+                <%= form.label :email_address, class: "label" %>
+                <div class="control has-icons-left">
+                  <%= form.email_field :email_address, required: true, autocomplete: "email", placeholder: "Enter your email address", class: "input" %>
+                  <span class="icon is-small is-left">
+                    <i class="fas fa-envelope"></i>
+                  </span>
+                </div>
+              </div>
+
+              <div class="field">
+                <%= form.label :password, class: "label" %>
+                <div class="control has-icons-left">
+                  <%= form.password_field :password, required: true, autocomplete: "new-password", placeholder: "Enter password", maxlength: 72, class: "input" %>
+                  <span class="icon is-small is-left">
+                    <i class="fas fa-lock"></i>
+                  </span>
+                </div>
+                <p class="help">Must be at least 8 characters</p>
+              </div>
+
+              <div class="field">
+                <%= form.label :password_confirmation, "Confirm Password", class: "label" %>
+                <div class="control has-icons-left">
+                  <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password", placeholder: "Repeat password", maxlength: 72, class: "input" %>
+                  <span class="icon is-small is-left">
+                    <i class="fas fa-lock"></i>
+                  </span>
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="control">
+                  <%= form.submit "Create Account", class: "button is-primary is-fullwidth" %>
+                </div>
+              </div>
+            <% end %>
+
+            <hr>
+
+            <div class="has-text-centered">
+              <p class="is-size-7">Already have an account? <%= link_to "Sign in", new_session_path, class: "has-text-link" %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

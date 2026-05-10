@@ -1,0 +1,65 @@
+<section class="hero is-fullheight">
+  <div class="hero-body">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-5-tablet is-4-desktop">
+          <div class="box">
+            <h1 class="title has-text-centered">Sign In</h1>
+
+            <% if flash[:alert] %>
+              <div class="notification is-danger is-light">
+                <button class="delete" onclick="this.parentElement.remove()"></button>
+                <%= flash[:alert] %>
+              </div>
+            <% end %>
+
+            <% if flash[:notice] %>
+              <div class="notification is-success is-light">
+                <button class="delete" onclick="this.parentElement.remove()"></button>
+                <%= flash[:notice] %>
+              </div>
+            <% end %>
+
+            <%= form_with url: session_path do |form| %>
+              <div class="field">
+                <%= form.label :email_address, class: "label" %>
+                <div class="control has-icons-left">
+                  <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", placeholder: "Enter your email address", value: params[:email_address], class: "input" %>
+                  <span class="icon is-small is-left">
+                    <i class="fas fa-envelope"></i>
+                  </span>
+                </div>
+              </div>
+
+              <div class="field">
+                <%= form.label :password, class: "label" %>
+                <div class="control has-icons-left">
+                  <%= form.password_field :password, required: true, autocomplete: "current-password", placeholder: "Enter your password", maxlength: 72, class: "input" %>
+                  <span class="icon is-small is-left">
+                    <i class="fas fa-lock"></i>
+                  </span>
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="control">
+                  <%= form.submit "Sign in", class: "button is-primary is-fullwidth" %>
+                </div>
+              </div>
+            <% end %>
+
+            <div class="has-text-centered mt-4">
+              <%= link_to "Forgot password?", new_password_path, class: "has-text-link" %>
+            </div>
+
+            <hr>
+
+            <div class="has-text-centered">
+              <p class="is-size-7">Don't have an account? <%= link_to "Sign up", new_registration_path, class: "has-text-link" %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,195 @@
+<section class="hero is-primary">
+  <div class="hero-body">
+    <div class="container">
+      <h1 class="title is-2"><%= @league.name %></h1>
+      <p class="subtitle">
+        <span class="tag is-<%= @league.active? ? 'success' : @league.accepting_signups? ? 'info' : 'dark' %> is-medium">
+          <%= @league.status.titleize %>
+        </span>
+        <% if @league.match_day.present? %>
+          <span class="tag is-light is-medium ml-2">
+            <i class="fas fa-calendar mr-1"></i>
+            <%= @league.match_day.titleize %>
+          </span>
+        <% end %>
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-10">
+        
+        <% if flash[:notice] %>
+          <div class="notification is-success is-light">
+            <button class="delete" onclick="this.parentElement.remove()"></button>
+            <%= flash[:notice] %>
+          </div>
+        <% end %>
+        
+        <% if flash[:alert] %>
+          <div class="notification is-danger is-light">
+            <button class="delete" onclick="this.parentElement.remove()"></button>
+            <%= flash[:alert] %>
+          </div>
+        <% end %>
+        
+        <% if @league.description.present? %>
+          <div class="box">
+            <h2 class="title is-5">About</h2>
+            <p class="content"><%= @league.description %></p>
+          </div>
+        <% end %>
+
+        <% if @league.active? && @league.groups.any? %>
+          <%# Group Standings %>
+          <div class="box">
+            <h2 class="title is-5">Group Standings</h2>
+            <% @league.groups.ordered.each do |group| %>
+              <div class="box is-paddingless">
+                <div class="notification is-primary mb-0">
+                  <p class="title is-5 mb-0">
+                    <span class="icon"><i class="fas fa-users"></i></span>
+                    <%= group.name %> Group
+                    <span class="tag is-light ml-2"><%= group.players.count %> players</span>
+                  </p>
+                </div>
+                <% if group.players.any? %>
+                  <table class="table is-fullwidth is-striped mb-0">
+                    <thead>
+                      <tr>
+                        <th style="width: 50px">#</th>
+                        <th>Player</th>
+                        <th class="has-text-centered" style="width: 80px">W</th>
+                        <th class="has-text-centered" style="width: 80px">L</th>
+                        <th class="has-text-centered" style="width: 100px">Win %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% group_standings = group.players.sort_by { |p| [-p.wins_count, p.losses_count] } %>
+                      <% group_standings.each_with_index do |player, index| %>
+                        <% total = player.wins_count + player.losses_count %>
+                        <% win_pct = total > 0 ? ((player.wins_count.to_f / total) * 100).round : 0 %>
+                        <% is_me = @player&.id == player.id %>
+                        <tr class="<%= 'has-background-success-dark' if is_me %>">
+                          <td class="has-text-weight-bold">
+                            <% case index when 0 %>
+                              <span class="icon has-text-warning"><i class="fas fa-trophy"></i></span>
+                            <% when 1 %><span class="icon has-text-grey"><i class="fas fa-medal"></i></span>
+                            <% when 2 %><span class="icon has-text Bronze"><i class="fas fa-medal" style="color: #cd7f32"></i></span>
+                            <% else %><%= index + 1 %>
+                            <% end %>
+                          </td>
+                          <td>
+                            <span class="<%= 'has-text-weight-bold' if is_me %>">
+                              <%= player.name %>
+                              <% if is_me %><span class="tag is-success is-small ml-1">You</span><% end %>
+                            </span>
+                          </td>
+                          <td class="has-text-centered has-text-success"><%= player.wins_count %></td>
+                          <td class="has-text-centered has-text-danger"><%= player.losses_count %></td>
+                          <td class="has-text-centered"><%= win_pct %>%</td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                <% else %>
+                  <p class="p-4 has-text-grey">No players in this group.</p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+        
+        <% if @league.accepting_signups? %>
+          <div class="box">
+            <h2 class="title is-5">Participants</h2>
+            <p class="is-size-4 has-text-weight-bold"><%= @league.players.count %></p>
+            <p class="has-text-grey">players signed up</p>
+          </div>
+          
+          <% if authenticated? %>
+            <% if @player %>
+              <div class="box">
+                <div class="level">
+                  <div class="level-left">
+                    <div class="level-item">
+                      <span class="icon-text">
+                        <span class="icon has-text-current">
+                          <i class="fas fa-check-circle"></i>
+                        </span>
+                        <span><strong>You're signed up!</strong></span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="level-right">
+                    <div class="level-item">
+                      <span class="tag is-success is-medium">Playing as <%= @player.name %></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% else %>
+              <div class="box">
+                <h2 class="title is-5">Join This League</h2>
+                <p class="mb-4">Enter a display name to use in this league:</p>
+                
+                <%= form_with url: league_signup_path(@league), method: :post do |form| %>
+                  <div class="field has-addons">
+                    <div class="control is-expanded">
+                      <%= form.text_field :display_name, 
+                            value: Current.user.username,
+                            class: "input", 
+                            placeholder: "Display name",
+                            maxlength: 20 %>
+                    </div>
+                    <div class="control">
+                      <%= form.submit "Sign Up", class: "button is-primary" %>
+                    </div>
+                  </div>
+                  <p class="help">This name will be visible to other players in the league.</p>
+                <% end %>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="box has-background-warning-light">
+              <h2 class="title is-5">Sign Up Required</h2>
+              <p class="mb-4">Create an account or sign in to join this league.</p>
+              <div class="buttons">
+                <%= link_to "Sign In", new_session_path(return_to: request.url), class: "button is-primary" %>
+                <%= link_to "Create Account", new_registration_path(return_to: request.url), class: "button is-info" %>
+              </div>
+            </div>
+          <% end %>
+        <% elsif @league.active? && !@league.groups.any? %>
+          <div class="box">
+            <div class="has-text-centered">
+              <p class="is-size-5 has-text-grey">Season is starting soon...</p>
+            </div>
+          </div>
+        <% else %>
+          <div class="box">
+            <div class="has-text-centered">
+              <p class="is-size-5 has-text-grey">
+                <% case @league.status.to_s %>
+                <% when "draft" %>
+                  This league is being prepared. Check back soon!
+                <% when "completed" %>
+                  This league has ended. Thanks for playing!
+                <% else %>
+                  <%= @league.status.titleize %>
+                <% end %>
+              </p>
+            </div>
+          </div>
+        <% end %>
+        
+        <div class="mt-5">
+          <%= link_to "Back to Leagues", leagues_path, class: "has-text-link" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,288 @@
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        
+        <%# Match Header %>
+        <div class="box">
+          <div class="level is-mobile">
+            <div class="level-left">
+              <div class="level-item">
+                <h1 class="title is-4">Match</h1>
+              </div>
+            </div>
+            <div class="level-right">
+              <div class="level-item">
+                <span class="tag is-<%= status_tag_color(@match.status) %> is-medium">
+                  <%= @match.status.titleize %>
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <%# Score Display %>
+          <% if @match.in_progress? || @match.completed? %>
+            <div class="has-text-centered mb-5">
+              <div class="level is-mobile">
+                <div class="level-item">
+                  <div>
+                    <p class="title is-2 <%= 'has-text-success' if @match.player1_score > @match.player2_score %>">
+                      <%= @match.player1_score if @my_player == @match.player1 %>
+                      <%= @match.player2_score if @my_player == @match.player2 %>
+                    </p>
+                  </div>
+                </div>
+                <div class="level-item">
+                  <p class="is-size-3 has-text-grey-light">-</p>
+                </div>
+                <div class="level-item">
+                  <div>
+                    <p class="title is-2 <%= 'has-text-success' if @match.player2_score > @match.player1_score %>">
+                      <%= @match.player2_score if @my_player == @match.player1 %>
+                      <%= @match.player1_score if @my_player == @match.player2 %>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+          
+          <%# Player Cards %>
+          <div class="columns is-mobile is-vcentered">
+            <% @match.match_players.each_with_index do |match_player, index| %>
+              <div class="column has-text-centered">
+                <article class="media">
+                  <div class="media-content">
+                    <p class="heading"><%= match_player.player.user == Current.user ? 'You' : match_player.player.name %></p>
+                    <p class="title is-5"><%= match_player.player.name %></p>
+                    
+                    <% if @match.pending? || @match.lobby? %>
+                      <% if match_player.player.user == Current.user %>
+                        <% if match_player.ready? %>
+                          <span class="icon-text has-text-success">
+                            <span class="icon"><i class="fas fa-check"></i></span>
+                            <span>Ready</span>
+                          </span>
+                        <% else %>
+                          <%= button_to "Ready", match_player_ready_path(match_player), method: :post, class: "button is-success is-medium mt-2" %>
+                        <% end %>
+                      <% else %>
+                        <% if match_player.ready? %>
+                          <span class="icon-text has-text-success">
+                            <span class="icon"><i class="fas fa-check"></i></span>
+                            <span>Ready</span>
+                          </span>
+                        <% else %>
+                          <span class="has-text-grey">Waiting...</span>
+                        <% end %>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </article>
+              </div>
+              <% if index < @match.players.length - 1 %>
+                <div class="column is-2 has-text-centered">
+                  <p class="is-size-2 has-text-grey-light">VS</p>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+        
+        <%# Race Selection Phase %>
+        <% if @match.races_picking? || @match.races_revealed? %>
+          <% current_game_number = @match.current_game&.game_number || (@match.games.count + 1) %>
+          <p class="has-text-centered has-text-grey is-size-7">Game <%= current_game_number %></p>
+          <% @match.match_players.each do |match_player| %>
+            <% is_me = match_player.player.user == Current.user %>
+            <% player_name = is_me ? 'You' : match_player.player.name %>
+            
+            <div class="box">
+              <h3 class="title is-6 has-text-centered">
+                <%= player_name %>
+                <% unless is_me %><span class="has-text-grey">(<%= match_player.player.name %>)</span><% end %>
+              </h3>
+              
+              <% if @match.races_picking? %>
+                <% if is_me %>
+                  <% available_races = @match.available_races %>
+                  <% all_races = @match.game.races %>
+                  <% if match_player.race_id.nil? %>
+                    <div class="columns is-mobile is-multiline">
+                      <% all_races.each do |race| %>
+                        <div class="column is-4">
+                          <% available = available_races.include?(race) %>
+                          <%= button_to race.name, match_player_race_path(match_player, race_id: race.id), 
+                              method: :post,
+                              class: "button is-medium is-fullwidth #{available ? 'is-primary' : 'is-dark is-outlined'}",
+                              disabled: !available %>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <div class="has-text-centered">
+                      <span class="tag is-success is-light is-medium">
+                        <i class="fas fa-check mr-2"></i>
+                        Race: <%= match_player.race&.name %>
+                      </span>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <% if match_player.race_id.nil? %>
+                    <p class="has-text-centered has-text-grey">Waiting for race selection...</p>
+                  <% else %>
+                    <div class="has-text-centered">
+                      <span class="tag is-info is-light is-medium">
+                        <i class="fas fa-check mr-2"></i>
+                        Race: <%= match_player.race&.name %>
+                      </span>
+                    </div>
+                  <% end %>
+                <% end %>
+              <% else %>
+                <%# Race reveal - show both races %>
+                <div class="has-text-centered">
+                  <p class="title is-4"><%= match_player.race&.name || '—' %></p>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+        
+        <%# Map Selection Phase %>
+        <% if @match.map_picking? && @match.current_game && @match.current_game.map_id.nil? %>
+          <% map_picker = @match.map_picker %>
+          <% available_maps = @match.available_maps %>
+          
+          <div class="box">
+            <p class="has-text-centered has-text-grey is-size-7 mb-2">Game <%= @match.current_game.game_number %></p>
+            
+            
+            <% if map_picker&.user == Current.user %>
+              <%# Current user picks the map %>
+              <h2 class="title is-5 has-text-centered mb-4">You pick the map</h2>
+              <% if available_maps.any? %>
+                <div class="columns is-mobile is-multiline">
+                  <% available_maps.each do |map| %>
+                    <div class="column is-4">
+                      <%= button_to map.name, match_pick_map_path(@match, map_id: map.id), 
+                          method: :post,
+                          class: "button is-info is-fullwidth" %>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <p class="has-text-centered has-text-grey">No maps available.</p>
+              <% end %>
+            <% else %>
+              <h2 class="title is-5 has-text-centered mb-4"><%= map_picker ? "#{map_picker.name} picks the map" : 'Map Selection' %></h2>
+              <p class="has-text-centered has-text-grey">Waiting...</p>
+            <% end %>
+          </div>
+        <% elsif @match.map_picking? && @match.current_game && @match.current_game.map_id.present? %>
+          <%= "test3" %>
+          <div class="box">
+            <p class="has-text-centered has-text-grey is-size-7 mb-2">Game <%= @match.current_game.game_number %></p>
+            <div class="has-text-centered">
+              <span class="tag is-info is-light is-medium">
+                <i class="fas fa-map mr-2"></i>
+                <%= @match.current_game.map.name %>
+              </span>
+            </div>
+          </div>
+        <% end %>
+        
+        <%# In Progress Phase %>
+        <% if @match.in_progress? && @match.current_game %>
+          <%= "test2" %>
+          <div class="box">
+            <div class="notification is-info is-light">
+              <p class="is-size-5 has-text-centered">
+                <strong>Game <%= @match.current_game.game_number %></strong><br>
+                <span class="icon-text is-centered">
+                  <i class="fas fa-map"></i>
+                  <span><%= @match.current_game.map&.name || "Map TBD" %></span>
+                </span>
+              </p>
+            </div>
+            <%= "test" %>
+            
+            <h3 class="title is-6 has-text-centered mt-4">Report Game Result</h3>
+            
+            <div class="buttons is-centered">
+              <% if @my_match_player.player.my_last_game_won?(@match) %>
+                <p class="notification is-warning is-light is-size-7">You won last game. Wait for opponent to report.</p>
+              <% else %>
+                <%= button_to "I Won", match_report_result_path(@match, winner_id: @my_player.id), 
+                    method: :post, class: "button is-success is-medium" %>
+                <%= button_to "I Lost", match_report_result_path(@match, winner_id: @opponent.id), 
+                    method: :post, class: "button is-danger is-medium" %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+        
+        <%# Match Completed %>
+        <% if @match.completed? %>
+          <div class="box has-background-<%= @match.winner == @my_player ? 'success' : 'danger' %>-light">
+            <div class="has-text-centered">
+              <% if @match.winner == @my_player %>
+                <p class="title is-2 has-text-success">
+                  <i class="fas fa-trophy"></i> Victory!
+                </p>
+              <% elsif @match.winner.nil? %>
+                <p class="title is-2 has-text-grey">Draw</p>
+              <% else %>
+                <p class="title is-2 has-text-danger">Defeat</p>
+              <% end %>
+              <p class="subtitle is-4">
+                <%= @match.player1_score %> - <%= @match.player2_score %>
+              </p>
+            </div>
+          </div>
+          
+          <%# Game History %>
+          <div class="box">
+            <h3 class="title is-5">Match Breakdown</h3>
+            <table class="table is-fullwidth">
+              <thead>
+                <tr>
+                  <th class="has-text-centered">#</th>
+                  <th>Map</th>
+                  <th class="has-text-centered">Your Race</th>
+                  <th class="has-text-centered">Opponent Race</th>
+                  <th class="has-text-centered">Winner</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @match.games.order(:game_number).each do |game| %>
+                  <% my_race = game.match_players.find_by(player: @my_player)&.race&.name %>
+                  <% opp_race = game.match_players.find_by(player: @opponent)&.race&.name %>
+                  <tr>
+                    <td class="has-text-centered"><%= game.game_number %></td>
+                    <td><%= game.map&.name || "—" %></td>
+                    <td class="has-text-centered"><%= my_race || "—" %></td>
+                    <td class="has-text-centered"><%= opp_race || "—" %></td>
+                    <td class="has-text-centered">
+                      <% if game.winner == @my_player %>
+                        <span class="tag is-success">Win</span>
+                      <% elsif game.winner == @opponent %>
+                        <span class="tag is-danger">Loss</span>
+                      <% else %>
+                        —
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% end %>
+        
+        <div class="mt-5">
+          <%= link_to "Back to Dashboard", dashboard_path, class: "has-text-link" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

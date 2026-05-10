@@ -1,0 +1,108 @@
+<section class="section">
+  <div class="container">
+    <h1 class="title">Dashboard</h1>
+    
+    <% if @player %>
+      <div class="columns">
+        <div class="column is-4">
+          <div class="box has-text-centered">
+            <p class="heading">League</p>
+            <p class="title is-4"><%= @league.name %></p>
+          </div>
+        </div>
+        <div class="column is-4">
+          <div class="box has-text-centered">
+            <p class="heading">ELO Rating</p>
+            <p class="title is-4"><%= @player.elo || 1000 %></p>
+          </div>
+        </div>
+        <div class="column is-4">
+          <div class="box has-text-centered">
+            <p class="heading">Status</p>
+            <p class="title is-4">
+              <span class="tag is-<%= @player.groups.any? ? 'success' : 'warning' %> is-medium">
+                <%= @player.groups.any? ? @player.groups.first.name : 'Unassigned' %>
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="columns">
+        <div class="column">
+          <div class="box">
+            <h2 class="title is-5">Upcoming Matches</h2>
+            <% if @upcoming_matches.any? %>
+              <table class="table is-fullwidth is-hoverable">
+                <thead>
+                  <tr>
+                    <th>Opponent</th>
+                    <th>Scheduled</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @upcoming_matches.each do |match| %>
+                    <% opponent = match.match_players.where.not(player: @player).first&.player %>
+                    <tr>
+                      <td><%= opponent&.name || "TBD" %></td>
+                      <td><%= match.scheduled_at&.strftime("%b %d, %Y") || "Not scheduled" %></td>
+                      <td><span class="tag is-<%= match.not_started? ? 'warning' : 'info' %>"><%= match.status %></span></td>
+                      <td><%= link_to "View", match, class: "button is-small is-primary" %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            <% else %>
+              <p class="has-text-grey">No upcoming matches.</p>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      
+      <div class="columns">
+        <div class="column">
+          <div class="box">
+            <h2 class="title is-5">Recent Results</h2>
+            <% if @recent_results.any? %>
+              <table class="table is-fullwidth is-hoverable">
+                <thead>
+                  <tr>
+                    <th>Opponent</th>
+                    <th>Result</th>
+                    <th>Score</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @recent_results.each do |match| %>
+                    <% opponent = match.match_players.where.not(player: @player).first&.player %>
+                    <% my_result = match.winner == @player %>
+                    <tr>
+                      <td><%= opponent&.name || "Unknown" %></td>
+                      <td>
+                        <span class="tag is-<%= my_result ? 'success' : 'danger' %>">
+                          <%= my_result ? 'Win' : 'Loss' %>
+                        </span>
+                      </td>
+                      <td><%= match.final_score_for(@player) %></td>
+                      <td><%= link_to "View", match, class: "button is-small is-light" %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            <% else %>
+              <p class="has-text-grey">No completed matches yet.</p>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% else %>
+      <div class="box has-text-centered">
+        <p class="is-size-4 mb-4">You haven't joined any leagues yet.</p>
+        <%= link_to "Browse Leagues", leagues_path, class: "button is-primary is-medium" %>
+      </div>
+    <% end %>
+  </div>
+</section>

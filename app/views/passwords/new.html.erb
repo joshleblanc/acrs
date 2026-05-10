@@ -1,0 +1,38 @@
+<section class="hero is-fullheight">
+  <div class="hero-body">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-5-tablet is-4-desktop">
+          <div class="box">
+            <h1 class="title has-text-centered">Forgot Password</h1>
+
+            <% if flash[:alert] %>
+              <div class="notification is-danger is-light">
+                <button class="delete" onclick="this.parentElement.remove()"></button>
+                <%= flash[:alert] %>
+              </div>
+            <% end %>
+
+            <%= form_with url: passwords_path do |form| %>
+              <div class="field">
+                <%= form.label :email_address, class: "label" %>
+                <div class="control has-icons-left">
+                  <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", placeholder: "Enter your email address", value: params[:email_address], class: "input" %>
+                  <span class="icon is-small is-left">
+                    <i class="fas fa-envelope"></i>
+                  </span>
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="control">
+                  <%= form.submit "Email Reset Instructions", class: "button is-primary is-fullwidth" %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

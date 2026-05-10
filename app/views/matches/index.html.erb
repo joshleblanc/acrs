@@ -1,0 +1,80 @@
+<section class="section">
+  <div class="container">
+    <h1 class="title">My Matches</h1>
+    
+    <% if @upcoming.any? %>
+      <div class="box">
+        <h2 class="title is-5">Upcoming</h2>
+        <% @upcoming.each do |match| %>
+          <% my_player = match.players.find { |p| p.user == Current.user } %>
+          <% opponent = match.players.find { |p| p.user != my_player } %>
+          <div class="card mb-4">
+            <div class="card-content">
+              <div class="level">
+                <div class="level-left">
+                  <div class="level-item">
+                    <div>
+                      <p class="heading">Opponent</p>
+                      <p class="title is-5"><%= opponent&.name || "TBD" %></p>
+                    </div>
+                  </div>
+                  <div class="level-item">
+                    <div>
+                      <p class="heading">League</p>
+                      <p class="title is-5"><%= match.league.name %></p>
+                    </div>
+                  </div>
+                </div>
+                <div class="level-right">
+                  <div class="level-item">
+                    <%= link_to "View Match", match, class: "button is-primary" %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="box has-text-centered">
+        <p class="is-size-4 has-text-grey mb-4">No upcoming matches</p>
+        <%= link_to "Browse Leagues", leagues_path, class: "button is-info" %>
+      </div>
+    <% end %>
+    
+    <% if @completed.any? %>
+      <div class="box mt-5">
+        <h2 class="title is-5">Completed</h2>
+        <table class="table is-fullwidth is-hoverable">
+          <thead>
+            <tr>
+              <th>Opponent</th>
+              <th>League</th>
+              <th>Result</th>
+              <th>Score</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @completed.each do |match| %>
+              <% my_player = match.players.find { |p| p.user == Current.user } %>
+              <% opponent = match.players.find { |p| p.user != Current.user } %>
+              <% my_win = match.winner == my_player %>
+              <tr>
+                <td><%= opponent&.name || "Unknown" %></td>
+                <td><%= match.league.name %></td>
+                <td>
+                  <span class="tag is-<%= my_win ? 'success' : 'danger' %>">
+                    <%= my_win ? 'Win' : 'Loss' %>
+                  </span>
+                </td>
+                <td><%= match.final_score_for(my_player) %></td>
+                <td><%= link_to "View", match, class: "button is-small is-light" %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+</section>

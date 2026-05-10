@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  league: one
+  name: MyString
+  tier: 1
+  min_players: 1
+  max_players: 1
+
+two:
+  league: two
+  name: MyString
+  tier: 1
+  min_players: 1
+  max_players: 1

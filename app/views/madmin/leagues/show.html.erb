@@ -1,0 +1,113 @@
+<%= content_for :title, resource.display_name(@record) %>
+
+<header class="header">
+  <h1>
+    <%= link_to resource.friendly_name.pluralize, resource.index_path %>
+    /
+    <%= resource.display_name(@record) %>
+  </h1>
+
+  <div class="actions">
+    <% if @record.accepting_signups? %>
+      <%= button_to "Start Season", [:start_season, :madmin, @record], method: :post, class: "btn btn-primary", data: { turbo_confirm: "This will create groups and schedule matches. Continue?" } %>
+    <% elsif @record.active? %>
+      <span class="badge badge-success">Season Active</span>
+    <% elsif @record.draft? %>
+      <span class="badge badge-secondary">Draft</span>
+    <% else %>
+      <span class="badge badge-secondary"><%= @record.status.titleize %></span>
+    <% end %>
+    <%= link_to "Edit", resource.edit_path(@record), class: "btn btn-secondary" %>
+    <%= button_to "Delete", resource.show_path(@record), method: :delete, data: { turbo_confirm: "Are you sure?" }, class: "btn btn-danger" %>
+  </div>
+</header>
+
+<div class="table-scroll">
+  <table>
+    <tbody>
+    <% resource.attributes.values.each do |attribute| %>
+      <% next if attribute.field.nil? %>
+      <% next unless attribute.field.visible?(action_name) %>
+
+      <tr>
+        <th class="label">
+          <%= attribute.field.options.label || attribute.name.to_s.titleize %>
+        </th>
+
+        <td>
+          <%= render partial: attribute.field.to_partial_path("show"), locals: { field: attribute.field, record: @record, resource: resource } %>
+        </td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+</div>
+
+<% if @record.active? %>
+  <section class="mt-5">
+    <h2 class="title is-5">Groups</h2>
+    <% @record.groups.ordered.each do |group| %>
+      <div class="box">
+        <h3 class="title is-6"><%= group.name %> Group (Tier <%= group.tier %>)</h3>
+        <p class="has-text-grey"><%= group.players.count %> players</p>
+        <ul>
+          <% group.players.each do |player| %>
+            <li><%= player.name %> (<%= player.wins_count %> wins)</li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+  </section>
+  
+  <section class="mt-5">
+    <h2 class="title is-5">Recent Matches</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Player 1</th>
+          <th>Player 2</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @record.matches.order(created_at: :desc).limit(10).each do |match| %>
+          <tr>
+            <td><%= match.player1&.name || "TBD" %></td>
+            <td><%= match.player2&.name || "TBD" %></td>
+            <td><span class="badge badge-<%= match.completed? ? 'success' : 'info' %>"><%= match.status.titleize %></span></td>
+            <td><%= link_to "View", [:madmin, match] %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+<% end %>
+
+<% if @record.accepting_signups? %>
+  <section class="mt-5">
+    <h2 class="title is-5">Players (<%= @record.players.count %>)</h2>
+    <% if @record.players.any? %>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>User</th>
+            <th>Signed Up</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @record.players.each do |player| %>
+            <tr>
+              <td><%= player.name %></td>
+              <td><%= player.user&.username || "—" %></td>
+              <td><%= player.created_at.strftime("%b %d, %Y") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="has-text-grey">No players signed up yet.</p>
+    <% end %>
+  </section>
+<% end %>

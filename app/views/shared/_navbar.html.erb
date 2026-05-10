@@ -1,0 +1,46 @@
+<nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <%= link_to "ACRS", leagues_path, class: "navbar-item is-size-4 has-text-weight-bold" %>
+    
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMain">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  
+  <div id="navbarMain" class="navbar-menu">
+    <div class="navbar-start">
+      <%= link_to "Leagues", leagues_path, class: "navbar-item" %>
+      <% if authenticated? %>
+        <%= link_to "My Matches", matches_path, class: "navbar-item" %>
+      <% end %>
+    </div>
+    
+    <div class="navbar-end">
+      <% if authenticated? %>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link">
+            <span class="icon">
+              <i class="fas fa-user"></i>
+            </span>
+            <span><%= Current.user.username %></span>
+          </a>
+          <div class="navbar-dropdown is-right">
+            <%= link_to "Dashboard", dashboard_path, class: "navbar-item" %>
+            <hr class="navbar-divider">
+            <%= button_to "Sign Out", session_path, method: :delete, class: "navbar-item", form: { class: "" } %>
+          </div>
+        </div>
+      <% else %>
+        <div class="navbar-item">
+          <div class="buttons">
+            <%= link_to "Sign In", new_session_path, class: "button is-light" %>
+            <%= link_to "Sign Up", new_registration_path, class: "button is-info is-light" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</nav>
