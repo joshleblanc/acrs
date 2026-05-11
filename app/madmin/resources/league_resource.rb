@@ -16,6 +16,8 @@ class LeagueResource < Madmin::Resource
   attribute :game
   attribute :players
   attribute :groups
+  attribute :current_week_map_index
+  attribute :maps
 
   # Scopes
   scope :draft

@@ -4,6 +4,8 @@ class League < ApplicationRecord
   has_many :invites, dependent: :destroy
   has_many :groups, dependent: :destroy
   has_many :matches, dependent: :destroy
+  has_many :league_maps, dependent: :destroy
+  has_many :maps, through: :league_maps
   
   normalizes :name, with: ->(n) { n.strip }
   
@@ -59,7 +61,17 @@ class League < ApplicationRecord
       }
     end
   end
-  
+
+  def current_week_map
+    return nil if maps.empty?
+    sorted_maps = maps.order('"league_maps"."order" ASC').to_a
+    sorted_maps[current_week_map_index % sorted_maps.size]
+  end
+
+  def advance_week
+    update!(current_week_map_index: current_week_map_index + 1)
+  end
+
   private
     def generate_slug
       self.slug = name.parameterize

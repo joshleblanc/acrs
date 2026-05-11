@@ -4,10 +4,11 @@ class Match < ApplicationRecord
   has_many :match_players, dependent: :destroy
   has_many :players, through: :match_players
   has_many :games, class_name: "MatchGame", dependent: :destroy
+  has_many :map_bans, dependent: :destroy
   
   accepts_nested_attributes_for :match_players
   
-  enum :status, [:pending, :lobby, :races_picking, :races_revealed, :map_picking, :in_progress, :completed]
+  enum :status, [:pending, :lobby, :map_banning, :races_picking, :races_revealed, :map_picking, :in_progress, :completed]
   
   delegate :game, to: :league
   
@@ -54,11 +55,15 @@ class Match < ApplicationRecord
     "#{my_score}-#{opp_score}"
   end
   
-  def advance_to_race_picking
+  def advance_to_map_banning
     # Create first game if none exists
     if games.empty?
       games.create!(game_number: 1, status: :pending)
     end
+    update!(status: :map_banning)
+  end
+
+  def advance_to_race_picking
     update!(status: :races_picking)
   end
   
@@ -93,12 +98,36 @@ class Match < ApplicationRecord
   def available_maps
     return [] unless game
     used_map_ids = games.where.not(map_id: nil).pluck(:map_id)
-    game.maps.where.not(id: used_map_ids)
+    league.maps.where.not(id: used_map_ids)
+  end
+
+  def available_maps_for_banning
+    # Exclude the week's starting map and already banned maps
+    week_map = league.current_week_map
+    banned_map_ids = map_bans.pluck(:map_id)
+    base_query = league.maps.where.not(id: banned_map_ids)
+    week_map ? base_query.where.not(id: week_map.id) : base_query
+  end
+
+  def available_maps_for_picking
+    # Available: league maps minus bans, minus already used maps, minus week's starting map
+    week_map = league.current_week_map
+    used_map_ids = games.where.not(map_id: nil).pluck(:map_id)
+    banned_map_ids = map_bans.where(game_number: current_game&.game_number).pluck(:map_id)
+    
+    base_query = league.maps.where.not(id: used_map_ids + banned_map_ids)
+    week_map ? base_query.where.not(id: week_map.id) : base_query
+  end
+
+  def both_maps_banned?
+    current_game_number = current_game&.game_number || 1
+    match_players.count == map_bans.where(game_number: current_game_number).count
   end
   
   def needs_race_selection?
-    # Game 1 needs race selection, subsequent games after map is picked need races
-    games.count <= 1
+    # Game 1 needs race selection after map is picked (map_banning flow)
+    # Game 2+: races picked before map, so no race selection needed after map
+    current_game&.game_number == 1
   end
   
   def report_winner(winner_player, _winner_id = nil)
@@ -110,12 +139,12 @@ class Match < ApplicationRecord
     if player1_score == 2 || player2_score == 2
       update!(status: :completed)
     else
-      # Create next game and advance to map picking (loser picks map first)
+      # Create next game and advance to races_picking (loser will pick map after race reveal)
       next_game_number = games.maximum(:game_number).to_i + 1
       games.create!(game_number: next_game_number, status: :pending)
       # Reset race selections for new game
       match_players.update_all(race_id: nil)
-      update!(status: :map_picking)
+      update!(status: :races_picking)
     end
   end
   

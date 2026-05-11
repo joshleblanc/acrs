@@ -15,6 +15,7 @@ Rails.application.routes.draw do
   # Match routes
   resources :matches, only: [:show, :index]
   post "/match_players/:id/ready", to: "match_players#ready", as: :match_player_ready
+  post "/match_players/:id/ban_map", to: "match_players#ban_map", as: :match_player_ban_map
   post "/match_players/:id/race", to: "match_players#pick_race", as: :match_player_race
   post "/matches/:id/map", to: "matches#pick_map", as: :match_pick_map
   post "/matches/:id/result", to: "matches#report_result", as: :match_report_result

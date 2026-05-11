@@ -5,7 +5,7 @@ class MatchesController < ApplicationController
   def index
     @players = Current.user.players.includes(:matches => [:league, :match_players => [:player]])
     @all_matches = @players.flat_map(&:matches).uniq.sort_by { |m| m.scheduled_at || Time.now }
-    @upcoming = @all_matches.select { |m| m.pending? || m.lobby? || m.races_picking? || m.races_revealed? || m.map_picking? || m.in_progress? }
+    @upcoming = @all_matches.select { |m| m.pending? || m.lobby? || m.map_banning? || m.races_picking? || m.races_revealed? || m.map_picking? || m.in_progress? }
     @completed = @all_matches.select(&:completed?)
   end
   
@@ -18,12 +18,12 @@ class MatchesController < ApplicationController
   def pick_map
     @match.current_game&.update!(map_id: params[:map_id])
     # After map is picked:
-    # - Game 1: go directly to in_progress
-    # - Game 2+: loser picked map, now race selection
+    # - Game 1: need race selection
+    # - Game 2+: races were already picked, go to in_progress
     if @match.needs_race_selection?
-      @match.advance_to_in_progress
+      @match.advance_to_race_picking
     else
-      @match.update!(status: :races_picking)
+      @match.advance_to_in_progress
     end
     redirect_to @match
   end
