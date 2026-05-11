@@ -19,10 +19,8 @@ class MatchPlayersController < ApplicationController
     map = Map.find(params[:map_id])
     game_number = @match_player.match.current_game&.game_number || 1
     
-    # Only allow ban if not already banned by this player for this game
     if @match_player.banned_map_id.nil?
       @match_player.update!(banned_map_id: map.id)
-      # Create the MapBan record
       MapBan.find_or_create_by!(
         match: @match_player.match,
         player: @match_player.player,
@@ -32,8 +30,7 @@ class MatchPlayersController < ApplicationController
     end
 
     if @match_player.match.both_maps_banned?
-      # Both players have banned, loser picks the map
-      @match_player.match.update!(status: :map_picking)
+      @match_player.match.update!(status: :in_progress)
     end
 
     redirect_to @match_player.match
