@@ -248,6 +248,14 @@ html.theme-dark body {
 
 .tag.is-medium { font-size: 0.875rem; }
 
+/* Bulma 1.0's `.tag.is-light` lacks an explicit text color, which renders as
+   low-contrast grey-on-white. Force a readable pairing in both schemes. */
+.tag.is-light {
+  background: var(--bulma-scheme-main-bis);
+  color: var(--bulma-text-strong);
+  border: 1px solid var(--bulma-border-weak);
+}
+
 /* ============================================================
    Tables — use Bulma vars so borders/text adapt to scheme
    ============================================================ */
@@ -284,7 +292,13 @@ html.theme-dark body {
   border-left: 3px solid hsl(var(--bulma-success-h), var(--bulma-success-s), var(--bulma-success-l));
 }
 
-.table tbody tr.has-background-success-dark td { color: inherit !important; }
+/* Bulma's `has-background-success-dark` forces white text on the cell, which
+   then cascades into descendants that don't set their own color (e.g. plain
+   text and `.tag.is-light`). Pin the cell text to the scheme's normal text
+   color so it stays readable on the tinted gradient row. */
+.table tbody tr.has-background-success-dark td {
+  color: var(--bulma-text) !important;
+}
 
 /* ============================================================
    Forms
