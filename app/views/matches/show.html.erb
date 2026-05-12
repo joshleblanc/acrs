@@ -35,7 +35,7 @@
                 <div class="level-item">
                   <p class="is-size-3 has-text-grey-light">-</p>
                 </div>
-                <div class="level-item">
+                <div class="level-itemmatchgame.rmatchgame.rbb">
                   <div>
                     <p class="title is-2 <%= 'has-text-success' if @match.player2_score > @match.player1_score %>">
                       <%= @match.player2_score if @my_player == @match.player1 %>
@@ -96,23 +96,24 @@
           <% @match.match_players.each do |match_player| %>
             <% is_me = match_player.player.user == Current.user %>
             <% player_name = is_me ? 'You' : match_player.player.name %>
-            
+            <% pick = @match.current_game_player_pick(match_player.player) %>
+
             <div class="box">
               <h3 class="title is-6 has-text-centered">
                 <%= player_name %>
                 <% unless is_me %><span class="has-text-grey">(<%= match_player.player.name %>)</span><% end %>
               </h3>
-              
+
               <% if @match.races_picking? %>
                 <% if is_me %>
                   <% available_races = @match.available_races %>
                   <% all_races = @match.game.races %>
-                  <% if match_player.race_id.nil? %>
+                  <% if pick&.race_id.nil? %>
                     <div class="columns is-mobile is-multiline">
                       <% all_races.each do |race| %>
                         <div class="column is-4">
                           <% available = available_races.include?(race) %>
-                          <%= button_to race.name, match_player_race_path(match_player, race_id: race.id), 
+                          <%= button_to race.name, match_player_race_path(match_player, race_id: race.id),
                               method: :post,
                               class: "button is-medium is-fullwidth #{available ? 'is-primary' : 'is-dark is-outlined'}",
                               disabled: !available %>
@@ -123,18 +124,18 @@
                     <div class="has-text-centered">
                       <span class="tag is-success is-light is-medium">
                         <i class="fas fa-check mr-2"></i>
-                        Race: <%= match_player.race&.name %>
+                        Race: <%= pick.race&.name %>
                       </span>
                     </div>
                   <% end %>
                 <% else %>
-                  <% if match_player.race_id.nil? %>
+                  <% if pick&.race_id.nil? %>
                     <p class="has-text-centered has-text-grey">Waiting for race selection...</p>
                   <% else %>
                     <div class="has-text-centered">
                       <span class="tag is-info is-light is-medium">
                         <i class="fas fa-check mr-2"></i>
-                        Race: <%= match_player.race&.name %>
+                        Race: <%= pick.race&.name %>
                       </span>
                     </div>
                   <% end %>
@@ -142,7 +143,7 @@
               <% else %>
                 <%# Race reveal - show both races %>
                 <div class="has-text-centered">
-                  <p class="title is-4"><%= match_player.race&.name || '—' %></p>
+                  <p class="title is-4"><%= pick&.race&.name || '—' %></p>
                 </div>
               <% end %>
             </div>
@@ -152,19 +153,28 @@
         <%# Map Banning Phase (Game 1 only) %>
         <% if @match.map_banning? && @match.current_game %>
           <% available_maps = @match.available_maps_for_banning %>
+          <% week_map = @match.current_game.map %>
           
           <div class="box">
             <p class="has-text-centered has-text-grey is-size-7 mb-2">Game 1 - Map Banning</p>
-            <p class="has-text-centered has-text-grey is-size-7 mb-4">Each player bans 1 map. <%= @match.league.current_week_map&.name || 'This week\'s map' %> is not available.</p>
+            
+            <% if week_map %>
+              <div class="notification is-info is-light has-text-centered mb-4">
+                <strong>This week's map:</strong> <%= week_map.name %>
+              </div>
+            <% end %>
+            
+            <p class="has-text-centered has-text-grey is-size-7 mb-4">Each player bans 1 map from the remaining pool.</p>
             
             <% @match.match_players.find_each do |match_player| %>
-              <% if match_player.banned_map.nil? %>
+              <% pick = @match.current_game_player_pick(match_player.player) %>
+              <% if pick&.banned_map.nil? %>
                 <% if match_player.player.user == Current.user %>
                   <% if available_maps.any? %>
                     <div class="columns is-mobile is-multiline">
                       <% available_maps.each do |map| %>
                         <div class="column is-4">
-                          <%= button_to "Ban #{map.name}", match_player_ban_map_path(match_player, map_id: map.id), 
+                          <%= button_to "Ban #{map.name}", match_player_ban_map_path(match_player, map_id: map.id),
                             method: :post,
                             class: "button is-danger is-fullwidth" %>
                         </div>
@@ -172,7 +182,7 @@
                     </div>
                   <% else %>
                     <p class="has-text-centered has-text-grey">No maps available to ban.</p>
-                  <% end %> 
+                  <% end %>
                 <% else %>
                     <p class="has-text-centered has-text-grey mt-3">Waiting for opponent to ban...</p>
                 <% end %>
@@ -181,7 +191,7 @@
                     <div class="has-text-centered">
                     <span class="tag is-danger is-light is-medium">
                       <i class="fas fa-ban mr-2"></i>
-                      You banned: <%= match_player.banned_map&.name %>
+                      You banned: <%= pick.banned_map&.name %>
                     </span>
                   </div>
                 <% else %>
@@ -295,8 +305,8 @@
               </thead>
               <tbody>
                 <% @match.games.order(:game_number).each do |game| %>
-                  <% my_race = game.match_players.find_by(player: @my_player)&.race&.name %>
-                  <% opp_race = game.match_players.find_by(player: @opponent)&.race&.name %>
+                  <% my_race = game.race_for(@my_player)&.name %>
+                  <% opp_race = game.race_for(@opponent)&.name %>
                   <tr>
                     <td class="has-text-centered"><%= game.game_number %></td>
                     <td><%= game.map&.name || "—" %></td>

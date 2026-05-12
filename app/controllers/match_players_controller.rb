@@ -17,34 +17,39 @@ class MatchPlayersController < ApplicationController
 
   def ban_map
     map = Map.find(params[:map_id])
-    game_number = @match_player.match.current_game&.game_number || 1
-    
-    if @match_player.banned_map_id.nil?
-      @match_player.update!(banned_map_id: map.id)
+    match = @match_player.match
+    game = match.current_game
+    game_number = game&.game_number || 1
+
+    slot = game&.player_slot(@match_player.player)
+    if slot && slot.banned_map_id.nil?
+      slot.update!(banned_map_id: map.id)
       MapBan.find_or_create_by!(
-        match: @match_player.match,
+        match: match,
         player: @match_player.player,
         map: map,
         game_number: game_number
       )
     end
 
-    if @match_player.match.both_maps_banned?
-      @match_player.match.update!(status: :in_progress)
+    if match.both_maps_banned?
+      match.update!(status: :in_progress)
     end
 
-    redirect_to @match_player.match
+    redirect_to match
   end
-  
+
   def pick_race
-    @match_player.update!(race_id: params[:race_id])
-    
-    if @match_player.match.both_races_selected?
-      @match_player.match.advance_to_race_reveal
-      @match_player.match.advance_to_map_selection
+    match = @match_player.match
+    slot = match.current_game&.player_slot(@match_player.player)
+    slot&.update!(race_id: params[:race_id])
+
+    if match.both_races_selected?
+      match.advance_to_race_reveal
+      match.advance_to_map_selection
     end
-    
-    redirect_to @match_player.match
+
+    redirect_to match
   end
   
   private

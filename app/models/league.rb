@@ -62,14 +62,12 @@ class League < ApplicationRecord
     end
   end
 
-  def current_week_map
+  def map_for_match(match)
     return nil if maps.empty?
     sorted_maps = maps.order('"league_maps"."order" ASC').to_a
-    sorted_maps[current_week_map_index % sorted_maps.size]
-  end
-
-  def advance_week
-    update!(current_week_map_index: current_week_map_index + 1)
+    # Determine map index based on match's position in league
+    match_index = matches.order(:id).pluck(:id).index(match.id) || 0
+    sorted_maps[match_index % sorted_maps.size]
   end
 
   private

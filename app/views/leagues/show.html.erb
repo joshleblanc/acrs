@@ -43,6 +43,68 @@
           </div>
         <% end %>
 
+        <% if @league.active? && @upcoming_by_group&.any? %>
+          <%# Upcoming Matches %>
+          <div class="box">
+            <h2 class="title is-5">
+              <span class="icon-text">
+                <span class="icon"><i class="fas fa-calendar-alt"></i></span>
+                <span>Upcoming Matches</span>
+              </span>
+            </h2>
+
+            <% @upcoming_by_group.each do |group, rounds| %>
+              <div class="box is-paddingless mb-4">
+                <div class="notification is-primary mb-0">
+                  <p class="title is-6 mb-0">
+                    <span class="icon"><i class="fas fa-users"></i></span>
+                    <%= group.name %> Group
+                  </p>
+                </div>
+
+                <% rounds.each do |round_number, round_matches| %>
+                  <div class="px-4 pt-3">
+                    <p class="heading mb-2">
+                      <%= round_number ? "Round #{round_number}" : "Unscheduled" %>
+                    </p>
+                  </div>
+                  <table class="table is-fullwidth mb-0">
+                    <tbody>
+                      <% round_matches.each do |match| %>
+                        <% p1 = match.match_players.first&.player %>
+                        <% p2 = match.match_players.last&.player %>
+                        <% is_mine = @player && (p1 == @player || p2 == @player) %>
+                        <tr class="<%= 'has-background-success-dark' if is_mine %>">
+                          <td class="has-text-right" style="width: 42%">
+                            <span class="<%= 'has-text-weight-bold' if is_mine && p1 == @player %>">
+                              <%= p1&.name || "TBD" %>
+                            </span>
+                          </td>
+                          <td class="has-text-centered has-text-grey" style="width: 16%">
+                            <span class="tag is-light">vs</span>
+                          </td>
+                          <td style="width: 42%">
+                            <span class="<%= 'has-text-weight-bold' if is_mine && p2 == @player %>">
+                              <%= p2&.name || "TBD" %>
+                            </span>
+                          </td>
+                          <td class="has-text-right" style="width: 1%">
+                            <% if is_mine %>
+                              <%= link_to "Open", match, class: "button is-small is-primary" %>
+                            <% else %>
+                              <span class="tag is-<%= status_tag_color(match.status) %>"><%= match.status.titleize %></span>
+                            <% end %>
+                          </td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
         <% if @league.active? && @league.groups.any? %>
           <%# Group Standings %>
           <div class="box">

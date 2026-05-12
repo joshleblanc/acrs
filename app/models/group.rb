@@ -3,6 +3,7 @@ class Group < ApplicationRecord
   
   has_many :group_assignments, dependent: :destroy
   has_many :players, through: :group_assignments
+  has_many :matches, dependent: :nullify
   
   validates :name, presence: true
   validates :tier, presence: true, uniqueness: { scope: :league }

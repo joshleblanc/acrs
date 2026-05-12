@@ -53,17 +53,16 @@ class MatchTest < ActiveSupport::TestCase
   test "match flow: map banning to map picking" do
     @match.match_players.update_all(ready: true)
     @match.advance_to_map_banning
-    
+
     # Both players ban maps
-    mp1 = @match.match_players.first
-    mp2 = @match.match_players.last
-    mp1.update!(banned_map_id: @map1.id)
-    mp2.update!(banned_map_id: @map2.id)
-    MapBan.create!(match: @match, player: mp1.player, map: @map1, game_number: 1)
-    MapBan.create!(match: @match, player: mp2.player, map: @map2, game_number: 1)
-    
+    game = @match.current_game
+    game.player_slot(@player1).update!(banned_map_id: @map1.id)
+    game.player_slot(@player2).update!(banned_map_id: @map2.id)
+    MapBan.create!(match: @match, player: @player1, map: @map1, game_number: 1)
+    MapBan.create!(match: @match, player: @player2, map: @map2, game_number: 1)
+
     @match.update!(status: :map_picking)
-    
+
     assert_equal "map_picking", @match.status
   end
   
@@ -71,9 +70,8 @@ class MatchTest < ActiveSupport::TestCase
     @match.match_players.update_all(ready: true)
     @match.advance_to_map_banning
     
-    # Set current week map
-    @league.update!(current_week_map_index: 0)
-    week_map = @league.current_week_map
+    # Week's map is determined by match position in league
+    week_map = @league.map_for_match(@match)
     
     available = @match.available_maps_for_banning.to_a
     refute_includes available, week_map
@@ -82,14 +80,15 @@ class MatchTest < ActiveSupport::TestCase
   test "match flow: race selection to map selection" do
     @match.match_players.update_all(ready: true)
     @match.advance_to_map_banning
-    
-    # Pick races
-    @match.match_players.first.update!(race: @race1)
-    @match.match_players.last.update!(race: @race2)
-    
+
+    # Pick races for the current game
+    game = @match.current_game
+    game.player_slot(@player1).update!(race: @race1)
+    game.player_slot(@player2).update!(race: @race2)
+
     @match.advance_to_race_reveal
     @match.advance_to_map_selection
-    
+
     assert_equal "map_picking", @match.status
   end
   
@@ -158,25 +157,50 @@ class MatchTest < ActiveSupport::TestCase
   
   test "match completes after 2 wins" do
     setup_to_in_progress
-    
+
     # Player 1 wins game 1
     @match.report_winner(@player1)
-    
-    # Game 2: pick races first
-    @match.match_players.first.update!(race: @race2)
-    @match.match_players.last.update!(race: @race1)
+
+    # Game 2: pick races first (different races than game 1 are fine)
+    game2 = @match.current_game
+    game2.player_slot(@player1).update!(race: @race2)
+    game2.player_slot(@player2).update!(race: @race1)
     @match.advance_to_race_reveal
     @match.advance_to_map_selection
-    
+
     # Loser picks map for game 2
     @match.current_game.update!(map_id: @map2.id)
     @match.advance_to_in_progress
-    
+
     # Player 1 wins game 2 (and match)
     @match.report_winner(@player1)
-    
+
     assert_equal "completed", @match.status
     assert_equal @player1, @match.winner
+  end
+
+  test "per-game race history is preserved across games" do
+    setup_to_in_progress
+
+    # Game 1 races recorded by setup_to_in_progress
+    game1 = @match.games.order(:game_number).first
+    assert_equal @race1, game1.race_for(@player1)
+    assert_equal @race2, game1.race_for(@player2)
+
+    # Player 1 wins game 1; game 2 is created and races picked.
+    @match.report_winner(@player1)
+    game2 = @match.current_game
+    # Loser of game 1 (winner restriction): @player1 cannot repeat @race1.
+    refute_includes @match.available_races, @race1
+
+    game2.player_slot(@player1).update!(race: @race2)
+    game2.player_slot(@player2).update!(race: @race1)
+
+    # Game 1's picks are still queryable, independent of game 2's picks.
+    assert_equal @race1, game1.reload.race_for(@player1)
+    assert_equal @race2, game1.race_for(@player2)
+    assert_equal @race2, game2.race_for(@player1)
+    assert_equal @race1, game2.race_for(@player2)
   end
   
   private
@@ -184,24 +208,23 @@ class MatchTest < ActiveSupport::TestCase
   def setup_to_map_selection
     @match.match_players.update_all(ready: true)
     @match.advance_to_map_banning
-    
+
     # Both ban maps
-    mp1 = @match.match_players.first
-    mp2 = @match.match_players.last
-    mp1.update!(banned_map_id: @map1.id)
-    mp2.update!(banned_map_id: @map2.id)
-    MapBan.create!(match: @match, player: mp1.player, map: @map1, game_number: 1)
-    MapBan.create!(match: @match, player: mp2.player, map: @map2, game_number: 1)
-    
+    game = @match.current_game
+    game.player_slot(@player1).update!(banned_map_id: @map1.id)
+    game.player_slot(@player2).update!(banned_map_id: @map2.id)
+    MapBan.create!(match: @match, player: @player1, map: @map1, game_number: 1)
+    MapBan.create!(match: @match, player: @player2, map: @map2, game_number: 1)
+
     @match.update!(status: :map_picking)
-    
+
     # Loser picks map
     @match.current_game.update!(map_id: @map3.id)
     @match.advance_to_race_picking
-    
-    # Pick races
-    @match.match_players.first.update!(race: @race1)
-    @match.match_players.last.update!(race: @race2)
+
+    # Pick races for game 1
+    game.player_slot(@player1).update!(race: @race1)
+    game.player_slot(@player2).update!(race: @race2)
     @match.advance_to_race_reveal
     @match.advance_to_map_selection
   end

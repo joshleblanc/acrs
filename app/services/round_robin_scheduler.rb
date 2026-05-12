@@ -54,6 +54,8 @@ class RoundRobinScheduler
   
   def create_match(player1, player2, round_number)
     @group.league.matches.create!(
+      group: @group,
+      round_number: round_number,
       match_players_attributes: [
         { player: player1 },
         { player: player2 }

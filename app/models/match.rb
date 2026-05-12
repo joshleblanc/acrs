@@ -1,5 +1,6 @@
 class Match < ApplicationRecord
   belongs_to :league
+  belongs_to :group, optional: true
   
   has_many :match_players, dependent: :destroy
   has_many :players, through: :match_players
@@ -21,11 +22,25 @@ class Match < ApplicationRecord
   end
   
   def player1_race
-    match_players.order(:id).first&.race
+    current_game&.race_for(player1)
   end
   
   def player2_race
-    match_players.order(:id).last&.race
+    current_game&.race_for(player2)
+  end
+
+  # MatchGamePlayer slot for the given Player in the current game (lazily
+  # created so a fresh game always has a row to populate).
+  def current_game_slot_for(player)
+    current_game&.player_slot(player)
+  end
+
+  # MatchGamePlayer for the given player in the current game without creating.
+  def current_game_player_pick(player)
+    return nil unless current_game
+    current_game.match_game_players
+                .joins(:match_player)
+                .find_by(match_players: { player_id: player.id })
   end
   
   def player1_score
@@ -58,7 +73,11 @@ class Match < ApplicationRecord
   def advance_to_map_banning
     # Create first game if none exists
     if games.empty?
-      games.create!(game_number: 1, status: :pending)
+      # Set the week's default map for game 1
+      game = games.create!(game_number: 1, status: :pending)
+      week_map = league.map_for_match(self)
+      game.update!(map_id: week_map.id) if week_map
+      seed_match_game_players(game)
     end
     update!(status: :map_banning)
   end
@@ -103,7 +122,7 @@ class Match < ApplicationRecord
 
   def available_maps_for_banning
     # Exclude the week's starting map and already banned maps
-    week_map = league.current_week_map
+    week_map = league.map_for_match(self)
     banned_map_ids = map_bans.pluck(:map_id)
     base_query = league.maps.where.not(id: banned_map_ids)
     week_map ? base_query.where.not(id: week_map.id) : base_query
@@ -111,7 +130,7 @@ class Match < ApplicationRecord
 
   def available_maps_for_picking
     # Available: league maps minus bans, minus already used maps, minus week's starting map
-    week_map = league.current_week_map
+    week_map = league.map_for_match(self)
     used_map_ids = games.where.not(map_id: nil).pluck(:map_id)
     banned_map_ids = map_bans.where(game_number: current_game&.game_number).pluck(:map_id)
     
@@ -141,9 +160,8 @@ class Match < ApplicationRecord
     else
       # Create next game and advance to races_picking (loser will pick map after race reveal)
       next_game_number = games.maximum(:game_number).to_i + 1
-      games.create!(game_number: next_game_number, status: :pending)
-      # Reset race selections for new game
-      match_players.update_all(race_id: nil)
+      next_game = games.create!(game_number: next_game_number, status: :pending)
+      seed_match_game_players(next_game)
       update!(status: :races_picking)
     end
   end
@@ -153,7 +171,9 @@ class Match < ApplicationRecord
   end
   
   def both_races_selected?
-    match_players.pluck(:race_id).all?(&:present?)
+    return false unless current_game
+    slots = current_game.match_game_players
+    slots.count == match_players.count && slots.where(race_id: nil).none?
   end
   
   def my_match_player(player)
@@ -166,22 +186,29 @@ class Match < ApplicationRecord
   
   def available_races
     return [] unless game
-    
-    # Winner of previous game can't pick same race
-    if games.any? && games.last.winner.present?
-      last_winner = games.last.winner
-      last_race_id = match_players.find_by(player: last_winner)&.race_id
-      if last_race_id.present?
-        game.races.where.not(id: last_race_id).to_a
-      else
-        game.races.to_a
+
+    # Winner of the previous (most recently completed) game can't pick same race.
+    last_completed = games.where(status: :completed).order(:game_number).last
+    if last_completed&.winner.present?
+      last_race = last_completed.race_for(last_completed.winner)
+      if last_race
+        return game.races.where.not(id: last_race.id).to_a
       end
-    else
-      game.races.to_a
     end
+    game.races.to_a
   end
   
   def available_races_for(player)
     available_races
+  end
+
+  private
+
+  # Create one MatchGamePlayer slot per match_player for the given game so race
+  # picks for that game have a place to live.
+  def seed_match_game_players(game)
+    match_players.find_each do |mp|
+      game.match_game_players.find_or_create_by!(match_player: mp)
+    end
   end
 end

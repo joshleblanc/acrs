@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_10_150002) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_12_100000) do
   create_table "games", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -60,7 +60,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_10_150002) do
 
   create_table "leagues", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.integer "current_week_map_index", default: 0
     t.string "description"
     t.integer "game_id", null: false
     t.integer "match_day"
@@ -91,6 +90,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_10_150002) do
     t.index ["game_id"], name: "index_maps_on_game_id"
   end
 
+  create_table "match_game_players", force: :cascade do |t|
+    t.integer "banned_map_id"
+    t.datetime "created_at", null: false
+    t.integer "match_game_id", null: false
+    t.integer "match_player_id", null: false
+    t.integer "race_id"
+    t.datetime "updated_at", null: false
+    t.index ["banned_map_id"], name: "index_match_game_players_on_banned_map_id"
+    t.index ["match_game_id", "match_player_id"], name: "index_match_game_players_on_game_and_player", unique: true
+    t.index ["match_game_id"], name: "index_match_game_players_on_match_game_id"
+    t.index ["match_player_id"], name: "index_match_game_players_on_match_player_id"
+    t.index ["race_id"], name: "index_match_game_players_on_race_id"
+  end
+
   create_table "match_games", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "game_number"
@@ -105,26 +118,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_10_150002) do
   end
 
   create_table "match_players", force: :cascade do |t|
-    t.integer "banned_map_id"
     t.datetime "created_at", null: false
     t.integer "match_id", null: false
     t.integer "player_id", null: false
-    t.string "race"
-    t.integer "race_id"
     t.boolean "ready"
     t.integer "score"
     t.datetime "updated_at", null: false
     t.index ["match_id"], name: "index_match_players_on_match_id"
     t.index ["player_id"], name: "index_match_players_on_player_id"
-    t.index ["race_id"], name: "index_match_players_on_race_id"
   end
 
   create_table "matches", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.integer "group_id"
     t.integer "league_id", null: false
+    t.integer "round_number"
     t.datetime "scheduled_at"
     t.integer "status", default: 0
     t.datetime "updated_at", null: false
+    t.index ["group_id"], name: "index_matches_on_group_id"
+    t.index ["league_id", "round_number"], name: "index_matches_on_league_id_and_round_number"
     t.index ["league_id"], name: "index_matches_on_league_id"
   end
 
@@ -177,13 +190,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_10_150002) do
   add_foreign_key "map_bans", "matches"
   add_foreign_key "map_bans", "players"
   add_foreign_key "maps", "games"
+  add_foreign_key "match_game_players", "maps", column: "banned_map_id"
+  add_foreign_key "match_game_players", "match_games"
+  add_foreign_key "match_game_players", "match_players"
+  add_foreign_key "match_game_players", "races"
   add_foreign_key "match_games", "maps"
   add_foreign_key "match_games", "matches"
   add_foreign_key "match_games", "players", column: "winner_id"
-  add_foreign_key "match_players", "maps", column: "banned_map_id"
   add_foreign_key "match_players", "matches"
   add_foreign_key "match_players", "players"
-  add_foreign_key "match_players", "races"
+  add_foreign_key "matches", "groups"
   add_foreign_key "matches", "leagues"
   add_foreign_key "players", "leagues"
   add_foreign_key "players", "users"

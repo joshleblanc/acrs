@@ -7,7 +7,5 @@ class CreateLeagueMaps < ActiveRecord::Migration[8.0]
 
       t.timestamps
     end
-
-    add_column :leagues, :current_week_map_index, :integer, default: 0
   end
 end

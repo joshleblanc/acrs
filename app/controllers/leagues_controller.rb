@@ -9,6 +9,20 @@ class LeaguesController < ApplicationController
   def show
     @invite = @league.active_invite if params[:token].present?
     @player = @league.player_for(Current.user) if authenticated?
+
+    if @league.active?
+      upcoming = @league.matches
+                        .where.not(status: :completed)
+                        .includes(:group, match_players: :player)
+                        .order(:round_number, :id)
+
+      # Hash of group => { round_number => [matches] }, ordered by tier.
+      @upcoming_by_group = @league.groups.ordered.each_with_object({}) do |group, h|
+        group_matches = upcoming.select { |m| m.group_id == group.id }
+        next if group_matches.empty?
+        h[group] = group_matches.group_by(&:round_number).sort.to_h
+      end
+    end
   end
   
   def invite

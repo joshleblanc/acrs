@@ -16,8 +16,7 @@ class Player < ApplicationRecord
   end
   
   def my_last_race_in(match)
-    match_player = match.match_players.find_by(player: self)
-    match_player&.race
+    match.current_game&.race_for(self)
   end
   
   def my_last_game_won?(match)
