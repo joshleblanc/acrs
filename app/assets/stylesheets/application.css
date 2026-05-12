@@ -1,10 +1,351 @@
 /*
- * This is a manifest file that'll be compiled into application.css.
- *
- * With Propshaft, assets are served efficiently without preprocessing steps. You can still include
- * application-wide styles in this file, but keep in mind that CSS precedence will follow the standard
- * cascading order, meaning styles declared later in the document or manifest will override earlier ones,
- * depending on specificity.
- *
- * Consider organizing styles into separate files for maintainability.
+ * Application styles — Bulma 1.0 refinements.
+ * Loaded after Bulma. Scheme-aware: only hue/shape tokens are overridden globally;
+ * scheme colors (backgrounds, borders, text) remain Bulma-driven so light/dark mode work.
  */
+
+/* ============================================================
+   Design tokens — hue & shape only (safe for light + dark)
+   ============================================================ */
+:root {
+  /* Brand palette: deep indigo primary, vibrant accents */
+  --bulma-primary-h: 244;
+  --bulma-primary-s: 64%;
+  --bulma-primary-l: 56%;
+
+  --bulma-link-h: 244;
+  --bulma-link-s: 64%;
+  --bulma-link-l: 56%;
+
+  --bulma-info-h: 198;
+  --bulma-info-s: 86%;
+  --bulma-info-l: 50%;
+
+  --bulma-success-h: 152;
+  --bulma-success-s: 60%;
+  --bulma-success-l: 42%;
+
+  --bulma-warning-h: 36;
+  --bulma-warning-s: 95%;
+  --bulma-warning-l: 54%;
+
+  --bulma-danger-h: 354;
+  --bulma-danger-s: 75%;
+  --bulma-danger-l: 56%;
+
+  /* Typography */
+  --bulma-family-primary: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bulma-family-secondary: "Space Grotesk", "Inter", sans-serif;
+  --bulma-body-family: var(--bulma-family-primary);
+  --bulma-title-family: var(--bulma-family-secondary);
+  --bulma-body-line-height: 1.6;
+
+  /* Shape */
+  --bulma-radius-small: 6px;
+  --bulma-radius: 10px;
+  --bulma-radius-medium: 14px;
+  --bulma-radius-large: 18px;
+}
+
+/* ============================================================
+   Global polish
+   ============================================================ */
+html { scroll-behavior: smooth; }
+
+body {
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light-mode page wash */
+@media (prefers-color-scheme: light) {
+  body {
+    background:
+      radial-gradient(1200px 600px at -10% -20%, hsla(244, 70%, 55%, 0.10), transparent 60%),
+      radial-gradient(900px 500px at 110% 0%, hsla(198, 86%, 50%, 0.08), transparent 55%),
+      var(--bulma-body-background-color);
+  }
+}
+
+/* Dark-mode page wash */
+@media (prefers-color-scheme: dark) {
+  body {
+    background:
+      radial-gradient(1200px 600px at -10% -20%, hsla(244, 70%, 55%, 0.18), transparent 60%),
+      radial-gradient(900px 500px at 110% 0%, hsla(280, 70%, 55%, 0.14), transparent 55%),
+      var(--bulma-body-background-color);
+  }
+}
+
+/* Explicit scheme classes (Bulma supports .theme-light / .theme-dark too) */
+html.theme-light body {
+  background:
+    radial-gradient(1200px 600px at -10% -20%, hsla(244, 70%, 55%, 0.10), transparent 60%),
+    radial-gradient(900px 500px at 110% 0%, hsla(198, 86%, 50%, 0.08), transparent 55%),
+    var(--bulma-body-background-color);
+}
+html.theme-dark body {
+  background:
+    radial-gradient(1200px 600px at -10% -20%, hsla(244, 70%, 55%, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 110% 0%, hsla(280, 70%, 55%, 0.14), transparent 55%),
+    var(--bulma-body-background-color);
+}
+
+.title, .subtitle { letter-spacing: -0.01em; }
+.title { font-weight: 700; }
+
+/* ============================================================
+   Navbar — gradient brand bar (works in both schemes since it's colored)
+   ============================================================ */
+.navbar.is-primary {
+  background: linear-gradient(135deg, hsl(244, 64%, 52%) 0%, hsl(264, 60%, 56%) 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 6px 24px -10px rgba(36, 24, 120, 0.45);
+}
+
+.navbar.is-primary .navbar-item,
+.navbar.is-primary .navbar-link {
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.navbar.is-primary .navbar-brand .navbar-item.is-size-4 {
+  font-family: var(--bulma-family-secondary);
+  letter-spacing: 0.04em;
+}
+
+.navbar.is-primary .navbar-item:hover,
+.navbar.is-primary .navbar-link:hover {
+  background-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.navbar-dropdown {
+  border-radius: var(--bulma-radius);
+  box-shadow: 0 14px 36px -10px rgba(15, 23, 42, 0.28);
+  border: 1px solid var(--bulma-border-weak);
+}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero.is-primary {
+  background: linear-gradient(135deg, hsl(244, 64%, 50%) 0%, hsl(280, 60%, 52%) 60%, hsl(310, 60%, 54%) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero.is-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.10), transparent 45%);
+  pointer-events: none;
+}
+
+.hero.is-primary .hero-body { position: relative; }
+
+.hero.is-primary .title,
+.hero.is-primary .subtitle {
+  color: #fff;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+}
+
+.hero .title.is-1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+
+/* ============================================================
+   Cards & boxes — use Bulma border vars so dark mode adapts
+   ============================================================ */
+.card,
+.box {
+  border-radius: var(--bulma-radius-medium);
+  border: 1px solid var(--bulma-border-weak);
+  box-shadow:
+    0 1px 2px hsla(0, 0%, 0%, 0.04),
+    0 10px 28px -14px hsla(0, 0%, 0%, 0.18);
+  transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+              box-shadow 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+              border-color 220ms ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .card, .box {
+    box-shadow:
+      0 1px 2px hsla(0, 0%, 0%, 0.4),
+      0 14px 32px -14px hsla(0, 0%, 0%, 0.6);
+  }
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 2px 4px hsla(0, 0%, 0%, 0.06),
+    0 22px 40px -14px hsla(0, 0%, 0%, 0.22);
+  border-color: hsla(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-l), 0.35);
+}
+
+.card-content { padding: 1.5rem; }
+
+.card-footer { border-top: 1px solid var(--bulma-border-weak); }
+
+.card-footer-item {
+  font-weight: 600;
+  color: hsl(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-l));
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.card-footer-item:hover {
+  background: hsla(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-l), 0.08);
+}
+
+/* Nested boxes — flatten and use weak border */
+.box .box {
+  box-shadow: none;
+  border: 1px solid var(--bulma-border-weak);
+  border-radius: var(--bulma-radius);
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.button {
+  font-weight: 600;
+  border-radius: var(--bulma-radius);
+  transition: transform 140ms ease, box-shadow 200ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.button:hover { transform: translateY(-1px); }
+.button:active { transform: translateY(0); }
+
+.button.is-primary {
+  background: linear-gradient(135deg, hsl(244, 64%, 56%), hsl(264, 60%, 56%));
+  border: none;
+  color: #fff;
+  box-shadow: 0 6px 16px -6px hsla(244, 64%, 50%, 0.5);
+}
+
+.button.is-primary:hover {
+  background: linear-gradient(135deg, hsl(244, 70%, 52%), hsl(264, 64%, 54%));
+  box-shadow: 0 10px 22px -8px hsla(244, 64%, 50%, 0.6);
+}
+
+.button.is-info {
+  background: linear-gradient(135deg, hsl(198, 86%, 50%), hsl(210, 86%, 56%));
+  border: none;
+  color: #fff;
+}
+
+/* ============================================================
+   Tags — keep Bulma's scheme-aware colors, just refine shape
+   ============================================================ */
+.tag:not(body) {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 999px;
+}
+
+.tag.is-medium { font-size: 0.875rem; }
+
+/* ============================================================
+   Tables — use Bulma vars so borders/text adapt to scheme
+   ============================================================ */
+.table { background-color: transparent; }
+
+.table th {
+  font-family: var(--bulma-family-secondary);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bulma-text-weak, var(--bulma-text));
+  border-bottom: 1px solid var(--bulma-border);
+}
+
+.table td {
+  border-bottom: 1px solid var(--bulma-border-weak);
+  vertical-align: middle;
+}
+
+.table.is-striped tbody tr:nth-child(even) {
+  background-color: var(--bulma-scheme-main-bis);
+}
+
+.table.is-hoverable tbody tr:hover {
+  background-color: hsla(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-l), 0.08) !important;
+}
+
+/* "You" row highlight — works on light & dark since it's a tinted overlay */
+.table tbody tr.has-background-success-dark {
+  background: linear-gradient(90deg,
+    hsla(var(--bulma-success-h), var(--bulma-success-s), 50%, 0.22),
+    hsla(var(--bulma-success-h), var(--bulma-success-s), 50%, 0.06)) !important;
+  border-left: 3px solid hsl(var(--bulma-success-h), var(--bulma-success-s), var(--bulma-success-l));
+}
+
+.table tbody tr.has-background-success-dark td { color: inherit !important; }
+
+/* ============================================================
+   Forms
+   ============================================================ */
+.input,
+.textarea,
+.select select {
+  border-radius: var(--bulma-radius);
+  border: 1px solid var(--bulma-border);
+  box-shadow: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.input:focus,
+.textarea:focus,
+.select select:focus {
+  border-color: hsl(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-l));
+  box-shadow: 0 0 0 3px hsla(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-l), 0.18);
+}
+
+/* ============================================================
+   Notifications
+   ============================================================ */
+.notification { border-radius: var(--bulma-radius); }
+
+.notification.is-primary {
+  background: linear-gradient(135deg, hsl(244, 64%, 56%), hsl(264, 60%, 56%));
+  color: #fff;
+}
+
+.notification.is-primary .title,
+.notification.is-primary .subtitle { color: #fff; }
+
+.notification.is-primary .tag.is-light {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* ============================================================
+   Misc
+   ============================================================ */
+.heading {
+  font-family: var(--bulma-family-secondary);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bulma-text-weak, var(--bulma-text));
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.section {
+  animation: fadeUp 380ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+a.has-text-link {
+  font-weight: 600;
+  transition: color 140ms ease;
+}
