@@ -27,12 +27,19 @@ class Player < ApplicationRecord
     match.games.last.winner == self
   end
   
+  # Count of completed matches won by this player (best-of series result, not
+  # individual games within a match).
   def wins_count
-    games.where(winner_id: id).count
+    completed_matches.count { |m| m.winner == self }
   end
-  
+
   def losses_count
-    total_games = matches.where(status: :completed).joins(:games).count
-    total_games - wins_count
+    completed_matches.count { |m| m.winner.present? && m.winner != self }
+  end
+
+  private
+
+  def completed_matches
+    matches.where(status: :completed).includes(:match_players, :games)
   end
 end
