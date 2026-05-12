@@ -33,7 +33,9 @@ class MatchPlayersController < ApplicationController
     end
 
     if match.both_maps_banned?
-      match.update!(status: :in_progress)
+      # Game 1: after both bans, players draft their races. The week's map is
+      # already set on game 1, so map_picking is skipped for this game.
+      match.advance_to_race_picking
     end
 
     redirect_to match
@@ -46,7 +48,14 @@ class MatchPlayersController < ApplicationController
 
     if match.both_races_selected?
       match.advance_to_race_reveal
-      match.advance_to_map_selection
+
+      if match.current_game&.map_id.present?
+        # Game 1 (or any game with a pre-set map): skip map_picking entirely.
+        match.advance_to_in_progress
+      else
+        # Game 2+: loser of previous game picks the map next.
+        match.advance_to_map_selection
+      end
     end
 
     redirect_to match

@@ -17,14 +17,9 @@ class MatchesController < ApplicationController
   
   def pick_map
     @match.current_game&.update!(map_id: params[:map_id])
-    # After map is picked:
-    # - Game 1: need race selection
-    # - Game 2+: races were already picked, go to in_progress
-    if @match.needs_race_selection?
-      @match.advance_to_race_picking
-    else
-      @match.advance_to_in_progress
-    end
+    # map_picking only runs for game 2+ (game 1 uses the league's week map),
+    # and races have already been drafted before the loser picks the map.
+    @match.advance_to_in_progress
     redirect_to @match
   end
   
