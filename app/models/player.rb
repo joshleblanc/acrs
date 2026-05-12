@@ -2,12 +2,15 @@ class Player < ApplicationRecord
   belongs_to :league
   belongs_to :user, optional: true
   
-  has_many :group_assignments
+  has_many :group_assignments, dependent: :destroy
   has_many :groups, through: :group_assignments
   
-  has_many :match_players
+  has_many :match_players, dependent: :destroy
   has_many :matches, through: :match_players
   has_many :games, through: :matches, source: :games, class_name: "MatchGame"
+  has_many :won_games, class_name: "MatchGame", foreign_key: :winner_id, dependent: :nullify, inverse_of: :winner
+
+  has_many :map_bans, dependent: :destroy
   
   validates :name, presence: true
   
