@@ -11,22 +11,30 @@ class LeagueActivationService
   
   def activate!
     return false unless @league.accepting_signups?
-    
+
     ActiveRecord::Base.transaction do
+      reset_existing!
       create_groups!
       assign_players_to_groups!
       schedule_matches!
       @league.update!(status: :active)
     end
-    
+
     true
-  rescue ActiveRecord::RecordInvalid => e
+  rescue ActiveRecord::RecordInvalid, ArgumentError => e
     @league.errors.add(:base, e.message)
     false
   end
-  
+
   private
-  
+
+  # Wipe any prior activation artifacts so re-running activate! produces a
+  # clean slate (fresh groups, fresh assignments, fresh schedule).
+  def reset_existing!
+    @league.matches.destroy_all
+    @league.groups.destroy_all
+  end
+
   def create_groups!
     group_count = calculate_group_count
     group_count.times do |i|
