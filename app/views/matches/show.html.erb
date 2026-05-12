@@ -106,7 +106,7 @@
 
               <% if @match.races_picking? %>
                 <% if is_me %>
-                  <% available_races = @match.available_races %>
+                  <% available_races = @match.available_races_for(match_player.player) %>
                   <% all_races = @match.game.races %>
                   <% if pick&.race_id.nil? %>
                     <div class="columns is-mobile is-multiline">

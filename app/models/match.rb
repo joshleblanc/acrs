@@ -184,22 +184,30 @@ class Match < ApplicationRecord
     players.where.not(id: player.id).first
   end
   
-  def available_races
+  def available_races_for(player)
     return [] unless game
 
-    # Winner of the previous (most recently completed) game can't pick same race.
-    last_completed = games.where(status: :completed).order(:game_number).last
-    if last_completed&.winner.present?
-      last_race = last_completed.race_for(last_completed.winner)
-      if last_race
-        return game.races.where.not(id: last_race.id).to_a
-      end
-    end
-    game.races.to_a
+    # Any race this player has ever *won* with in this match is locked out for
+    # the rest of the set. Losing with a race does not lock it out — only
+    # winning does. So a player who wins game 1 with Orc, loses game 2 as
+    # Human, still cannot pick Orc again for game 3.
+    won_race_ids = games.where(status: :completed, winner: player)
+                        .joins(match_game_players: :match_player)
+                        .where(match_players: { player_id: player.id })
+                        .pluck("match_game_players.race_id")
+                        .compact
+
+    scope = game.races
+    scope = scope.where.not(id: won_race_ids) if won_race_ids.any?
+    scope.to_a
   end
-  
-  def available_races_for(player)
-    available_races
+
+  # Backwards-compatible alias used in places where we don't yet know the
+  # player context (returns the union of restrictions, i.e. only excludes a
+  # race if *every* player would be barred from picking it — which is never).
+  def available_races
+    return [] unless game
+    game.races.to_a
   end
 
   private

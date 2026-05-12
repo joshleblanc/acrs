@@ -190,8 +190,10 @@ class MatchTest < ActiveSupport::TestCase
     # Player 1 wins game 1; game 2 is created and races picked.
     @match.report_winner(@player1)
     game2 = @match.current_game
-    # Loser of game 1 (winner restriction): @player1 cannot repeat @race1.
-    refute_includes @match.available_races, @race1
+    # Winner of game 1 cannot repeat the race they won with…
+    refute_includes @match.available_races_for(@player1), @race1
+    # …but the loser is free to keep playing the same race.
+    assert_includes @match.available_races_for(@player2), @race2
 
     game2.player_slot(@player1).update!(race: @race2)
     game2.player_slot(@player2).update!(race: @race1)
@@ -201,6 +203,34 @@ class MatchTest < ActiveSupport::TestCase
     assert_equal @race2, game1.race_for(@player2)
     assert_equal @race2, game2.race_for(@player1)
     assert_equal @race1, game2.race_for(@player2)
+  end
+
+  test "winning races lock out for the rest of the set, losing races do not" do
+    setup_to_in_progress
+
+    # Game 1: @player1 wins as @race1.
+    @match.report_winner(@player1)
+
+    # Game 2: @player1 plays @race2 and LOSES; @player2 plays @race1 and wins.
+    game2 = @match.current_game
+    game2.player_slot(@player1).update!(race: @race2)
+    game2.player_slot(@player2).update!(race: @race1)
+    @match.advance_to_race_reveal
+    @match.advance_to_map_selection
+    @match.current_game.update!(map_id: @map2.id)
+    @match.advance_to_in_progress
+    @match.report_winner(@player2)
+
+    # Game 3 race-pick state: @player1 has won with @race1, lost with @race2.
+    # Losing @race2 does NOT lock it out, but winning @race1 does.
+    p1_avail = @match.available_races_for(@player1)
+    refute_includes p1_avail, @race1, "race won earlier in the set must stay locked out"
+    assert_includes p1_avail, @race2, "race only ever lost with should remain available"
+
+    # @player2 won game 2 with @race1 (and lost game 1 as @race2). Same rule:
+    p2_avail = @match.available_races_for(@player2)
+    refute_includes p2_avail, @race1, "winning race locks out for that player too"
+    assert_includes p2_avail, @race2
   end
   
   private
