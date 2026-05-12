@@ -43,6 +43,66 @@
           </div>
         <% end %>
 
+        <% if @league.active? && @league.groups.any? %>
+          <%# Group Standings %>
+          <div class="box">
+            <h2 class="title is-5">Group Standings</h2>
+            <% @league.groups.ordered.each do |group| %>
+              <div class="box is-paddingless">
+                <div class="notification is-primary mb-0">
+                  <p class="title is-5 mb-0">
+                    <span class="icon"><i class="fas fa-users"></i></span>
+                    <%= group.name %> Group
+                    <span class="tag is-light ml-2"><%= group.players.count %> players</span>
+                  </p>
+                </div>
+                <% if group.players.any? %>
+                  <table class="table is-fullwidth is-striped mb-0">
+                    <thead>
+                      <tr>
+                        <th style="width: 50px">#</th>
+                        <th>Player</th>
+                        <th class="has-text-centered" style="width: 80px">W</th>
+                        <th class="has-text-centered" style="width: 80px">L</th>
+                        <th class="has-text-centered" style="width: 100px">Win %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% group_standings = group.players.sort_by { |p| [-p.wins_count, p.losses_count] } %>
+                      <% group_standings.each_with_index do |player, index| %>
+                        <% total = player.wins_count + player.losses_count %>
+                        <% win_pct = total > 0 ? ((player.wins_count.to_f / total) * 100).round : 0 %>
+                        <% is_me = @player&.id == player.id %>
+                        <tr class="<%= 'has-background-success-dark' if is_me %>">
+                          <td class="has-text-weight-bold">
+                            <% case index when 0 %>
+                              <span class="icon has-text-warning"><i class="fas fa-trophy"></i></span>
+                            <% when 1 %><span class="icon has-text-grey"><i class="fas fa-medal"></i></span>
+                            <% when 2 %><span class="icon has-text Bronze"><i class="fas fa-medal" style="color: #cd7f32"></i></span>
+                            <% else %><%= index + 1 %>
+                            <% end %>
+                          </td>
+                          <td>
+                            <span class="<%= 'has-text-weight-bold' if is_me %>">
+                              <%= player.name %>
+                              <% if is_me %><span class="tag is-success is-small ml-1">You</span><% end %>
+                            </span>
+                          </td>
+                          <td class="has-text-centered has-text-success"><%= player.wins_count %></td>
+                          <td class="has-text-centered has-text-danger"><%= player.losses_count %></td>
+                          <td class="has-text-centered"><%= win_pct %>%</td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                <% else %>
+                  <p class="p-4 has-text-grey">No players in this group.</p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
         <% if @league.active? && @upcoming_by_group&.any? %>
           <%# Upcoming Matches %>
           <div class="box">
@@ -105,66 +165,6 @@
           </div>
         <% end %>
 
-        <% if @league.active? && @league.groups.any? %>
-          <%# Group Standings %>
-          <div class="box">
-            <h2 class="title is-5">Group Standings</h2>
-            <% @league.groups.ordered.each do |group| %>
-              <div class="box is-paddingless">
-                <div class="notification is-primary mb-0">
-                  <p class="title is-5 mb-0">
-                    <span class="icon"><i class="fas fa-users"></i></span>
-                    <%= group.name %> Group
-                    <span class="tag is-light ml-2"><%= group.players.count %> players</span>
-                  </p>
-                </div>
-                <% if group.players.any? %>
-                  <table class="table is-fullwidth is-striped mb-0">
-                    <thead>
-                      <tr>
-                        <th style="width: 50px">#</th>
-                        <th>Player</th>
-                        <th class="has-text-centered" style="width: 80px">W</th>
-                        <th class="has-text-centered" style="width: 80px">L</th>
-                        <th class="has-text-centered" style="width: 100px">Win %</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <% group_standings = group.players.sort_by { |p| [-p.wins_count, p.losses_count] } %>
-                      <% group_standings.each_with_index do |player, index| %>
-                        <% total = player.wins_count + player.losses_count %>
-                        <% win_pct = total > 0 ? ((player.wins_count.to_f / total) * 100).round : 0 %>
-                        <% is_me = @player&.id == player.id %>
-                        <tr class="<%= 'has-background-success-dark' if is_me %>">
-                          <td class="has-text-weight-bold">
-                            <% case index when 0 %>
-                              <span class="icon has-text-warning"><i class="fas fa-trophy"></i></span>
-                            <% when 1 %><span class="icon has-text-grey"><i class="fas fa-medal"></i></span>
-                            <% when 2 %><span class="icon has-text Bronze"><i class="fas fa-medal" style="color: #cd7f32"></i></span>
-                            <% else %><%= index + 1 %>
-                            <% end %>
-                          </td>
-                          <td>
-                            <span class="<%= 'has-text-weight-bold' if is_me %>">
-                              <%= player.name %>
-                              <% if is_me %><span class="tag is-success is-small ml-1">You</span><% end %>
-                            </span>
-                          </td>
-                          <td class="has-text-centered has-text-success"><%= player.wins_count %></td>
-                          <td class="has-text-centered has-text-danger"><%= player.losses_count %></td>
-                          <td class="has-text-centered"><%= win_pct %>%</td>
-                        </tr>
-                      <% end %>
-                    </tbody>
-                  </table>
-                <% else %>
-                  <p class="p-4 has-text-grey">No players in this group.</p>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
-        
         <% if @league.accepting_signups? %>
           <div class="box">
             <h2 class="title is-5">Participants</h2>
